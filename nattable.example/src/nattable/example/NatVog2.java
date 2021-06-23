@@ -156,8 +156,8 @@ public class NatVog2 {
 
 		@Override
 		public boolean isExpanded(TreeItem<Todo> element, List<TreeItem<Todo>> path) {
-			if (element == null) return false;
-			return element.hasChildren();
+			System.out.println("ele: " + element.getItem() +":" + element.hasChildren() + ". p: " + path);
+			return element.hasChildren(); //element.getParent() == null;
 		}
 
 		@Override
@@ -321,6 +321,8 @@ public class NatVog2 {
 			return persons.size();
 		}
 	}
+	
+	
 	
     public static void main(String[] argv) {
         Display display = new Display();
