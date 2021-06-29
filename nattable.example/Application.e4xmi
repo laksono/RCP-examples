@@ -8,6 +8,7 @@
             <children xsi:type="basic:Part" xmi:id="_mEnrwGvrEeuSGMzWH4hS6Q" elementId="nattable.example.part.example" contributionURI="bundleclass://nattable.example/nattable.example.TreeGridExample" label="example"/>
             <children xsi:type="basic:Part" xmi:id="_2N4uwGyCEeubfayBqUYifg" elementId="nattable.example.part._6041_treegridexample" contributionURI="bundleclass://nattable.example/nattable.example._6041_TreeGridExample" label="_6041_TreeGridExample"/>
             <children xsi:type="basic:Part" xmi:id="_PDZd4GzSEeubfayBqUYifg" elementId="nattable.example.part.darkexample" contributionURI="bundleclass://nattable.example/nattable.example.DarkExample" label="Dark example"/>
+            <children xsi:type="basic:Part" xmi:id="_MRuhgNiAEeuGkopAEvPKHg" elementId="nattable.example.part.metric" contributionURI="bundleclass://nattable.example/nattable.example.Metric" label="Metric"/>
           </children>
         </children>
       </children>
