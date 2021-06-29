@@ -25,7 +25,12 @@ import org.eclipse.nebula.widgets.nattable.layer.DataLayer;
 import org.eclipse.nebula.widgets.nattable.layer.cell.ColumnLabelAccumulator;
 import org.eclipse.nebula.widgets.nattable.painter.cell.CheckBoxPainter;
 import org.eclipse.nebula.widgets.nattable.style.DisplayMode;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 
 public class Metric {
 	@Inject
@@ -36,7 +41,7 @@ public class Metric {
 	@PostConstruct
 	public void postConstruct(Composite parent) {
 		final List<MetricData> list = createMetrics();
-		System.out.println("num list: " + list.size());
+		
 		IColumnPropertyAccessor<MetricData> columnAccessor = new IColumnPropertyAccessor<Metric.MetricData>() {
 
 			@Override
@@ -53,6 +58,13 @@ public class Metric {
 
 			@Override
 			public void setDataValue(MetricData rowObject, int columnIndex, Object newValue) {
+				switch (columnIndex) {
+				case 0: rowObject.id = (int) newValue; break;
+				case 1: rowObject.name = (String) newValue; break;
+				case 2: rowObject.description = (String) newValue; break;
+				case 3: rowObject.formula = (String) newValue; break;
+				case 4: rowObject.visible = (boolean) newValue; break;
+				}
 			}
 
 			@Override
@@ -152,6 +164,33 @@ public class Metric {
 		String description;
 		String formula;
 		boolean visible;
+	}
+	
+	
+	public static void main(String []args ) {
+        // Setup
+        Display display = Display.getDefault();
+        Shell shell = new Shell(display, SWT.SHELL_TRIM);
+        shell.setLayout(new FillLayout());
+        shell.setSize(800, 500);
+        shell.setText("test table");
+        
+        Metric metric = new Metric();
+        
+        // Create example control
+        metric.postConstruct(shell);
+
+        shell.open();
+
+        while (!shell.isDisposed()) {
+            if (!display.readAndDispatch()) {
+                display.sleep();
+            }
+        }
+
+        shell.dispose();
+        display.dispose();
+
 	}
 	
 }
