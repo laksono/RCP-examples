@@ -1,11 +1,24 @@
+/*******************************************************************************
+ * Copyright (c) 2019, 2020 Dirk Fauth and others.
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *    Dirk Fauth <dirk.fauth@googlemail.com> - initial API and implementation
+ *    Roman Flueckiger <roman.flueckiger@mac.com> - added expand/collapse key bindings
+ *******************************************************************************/
 package nattable.example;
 
-import javax.annotation.PostConstruct;
-
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.nebula.widgets.nattable.NatTable;
@@ -19,9 +32,7 @@ import org.eclipse.nebula.widgets.nattable.data.IDataProvider;
 import org.eclipse.nebula.widgets.nattable.data.ListDataProvider;
 import org.eclipse.nebula.widgets.nattable.data.ReflectiveColumnPropertyAccessor;
 import org.eclipse.nebula.widgets.nattable.data.convert.DefaultDateDisplayConverter;
-import org.eclipse.nebula.widgets.nattable.extension.glazedlists.GlazedListsEventLayer;
-import org.eclipse.nebula.widgets.nattable.extension.glazedlists.tree.GlazedListTreeData;
-import org.eclipse.nebula.widgets.nattable.extension.glazedlists.tree.GlazedListTreeRowModel;
+
 import org.eclipse.nebula.widgets.nattable.grid.data.DefaultColumnHeaderDataProvider;
 import org.eclipse.nebula.widgets.nattable.grid.data.DefaultCornerDataProvider;
 import org.eclipse.nebula.widgets.nattable.grid.data.DefaultRowHeaderDataProvider;
@@ -38,8 +49,10 @@ import org.eclipse.nebula.widgets.nattable.layer.cell.ColumnLabelAccumulator;
 import org.eclipse.nebula.widgets.nattable.painter.cell.CheckBoxPainter;
 import org.eclipse.nebula.widgets.nattable.selection.SelectionLayer;
 import org.eclipse.nebula.widgets.nattable.style.DisplayMode;
+import org.eclipse.nebula.widgets.nattable.tree.ITreeData;
 import org.eclipse.nebula.widgets.nattable.tree.ITreeRowModel;
 import org.eclipse.nebula.widgets.nattable.tree.TreeLayer;
+import org.eclipse.nebula.widgets.nattable.tree.TreeRowModel;
 import org.eclipse.nebula.widgets.nattable.tree.command.TreeCollapseAllCommand;
 import org.eclipse.nebula.widgets.nattable.tree.command.TreeExpandAllCommand;
 import org.eclipse.nebula.widgets.nattable.tree.config.TreeLayerExpandCollapseKeyBindings;
@@ -48,34 +61,29 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import ca.odell.glazedlists.EventList;
-import ca.odell.glazedlists.GlazedLists;
-import ca.odell.glazedlists.SortedList;
-import ca.odell.glazedlists.TransformedList;
-import ca.odell.glazedlists.TreeList;
+/**
+ * Simple example showing how to create a tree within a grid.
+ */
+public class _514_TreeLayerExample {
 
-public class _6041_TreeGridExample 
-{
-
-	public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 		System.out.println("Test begin");
+
 		final Display display = new Display();
 		final Shell   shell   = new Shell(display);
 		shell.setLayout(new FillLayout());
-		
 		shell.setText("Test Tree");
 		 
-		
-		_6041_TreeGridExample t = new _6041_TreeGridExample();
-		t.createExampleControl(shell);
+		_514_TreeLayerExample tl = new _514_TreeLayerExample();
+		tl.createExampleControl(shell);
 		
 		shell.open();
 		
@@ -87,13 +95,12 @@ public class _6041_TreeGridExample
 		display.dispose();
 
 		System.out.println("Test end");
-	}
+
+    }
 
 
-    @PostConstruct
-    public void createExampleControl(Composite parent) {
-        Composite container = new Composite(parent, SWT.BORDER);
-        container.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, true));
+    public Control createExampleControl(Composite parent) {
+        Composite container = new Composite(parent, SWT.NONE);
         container.setLayout(new GridLayout());
 
         // create a new ConfigRegistry which will be needed for GlazedLists
@@ -114,10 +121,12 @@ public class _6041_TreeGridExample
         IColumnPropertyAccessor<PersonWithAddress> columnPropertyAccessor =
                 new ReflectiveColumnPropertyAccessor<>(propertyNames);
 
+        List<PersonWithAddress> personsWithAddress = PersonService.getPersonsWithAddress(50);
         final BodyLayerStack<PersonWithAddress> bodyLayerStack =
                 new BodyLayerStack<>(
-                        PersonService.getPersonsWithAddress(50),
-                        columnPropertyAccessor, new PersonWithAddressTreeFormat());
+                        personsWithAddress,
+                        columnPropertyAccessor,
+                        new PersonWithAddressTreeData(personsWithAddress));
 
         // build the column header layer
         IDataProvider columnHeaderDataProvider =
@@ -210,6 +219,8 @@ public class _6041_TreeGridExample
                 natTable.doCommand(new TreeExpandAllCommand());
             }
         });
+
+        return container;
     }
 
     /**
@@ -220,42 +231,25 @@ public class _6041_TreeGridExample
      */
     class BodyLayerStack<T> extends AbstractLayerTransform {
 
-        private final TreeList<T> treeList;
-
         private final IDataProvider bodyDataProvider;
 
         private final SelectionLayer selectionLayer;
 
         private final TreeLayer treeLayer;
 
-        @SuppressWarnings("unchecked")
         public BodyLayerStack(List<T> values,
                 IColumnPropertyAccessor<T> columnPropertyAccessor,
-                TreeList.Format<T> treeFormat) {
-            // wrapping of the list to show into GlazedLists
-            // see http://publicobject.com/glazedlists/ for further information
-            EventList<T> eventList = GlazedLists.eventList(values);
-            TransformedList<T, T> rowObjectsGlazedList = GlazedLists.threadSafeList(eventList);
+                ITreeData<T> treeData) {
 
-            // use the SortedList constructor with 'null' for the Comparator
-            // because the Comparator will be set by configuration
-            SortedList<T> sortedList = new SortedList<>(rowObjectsGlazedList, null);
-            // wrap the SortedList with the TreeList
-            this.treeList = new TreeList<T>(sortedList, treeFormat, TreeList.NODES_START_EXPANDED);
-
-            this.bodyDataProvider = new ListDataProvider<>(this.treeList, columnPropertyAccessor);
+            this.bodyDataProvider = new ListDataProvider<>(values, columnPropertyAccessor);
             DataLayer bodyDataLayer = new DataLayer(this.bodyDataProvider);
 
             // simply apply labels for every column by index
             bodyDataLayer.setConfigLabelAccumulator(new ColumnLabelAccumulator());
 
-            // layer for event handling of GlazedLists and PropertyChanges
-            GlazedListsEventLayer<T> glazedListsEventLayer = new GlazedListsEventLayer<>(bodyDataLayer, this.treeList);
+            ITreeRowModel<T> treeRowModel = new TreeRowModel<>(treeData);
 
-            GlazedListTreeData<T> treeData = new GlazedListTreeData<>(this.treeList);
-            ITreeRowModel<T> treeRowModel = new GlazedListTreeRowModel<>(treeData);
-
-            this.selectionLayer = new SelectionLayer(glazedListsEventLayer);
+            this.selectionLayer = new SelectionLayer(bodyDataLayer);
 
             this.treeLayer = new TreeLayer(this.selectionLayer, treeRowModel);
             ViewportLayer viewportLayer = new ViewportLayer(this.treeLayer);
@@ -271,72 +265,119 @@ public class _6041_TreeGridExample
             return this.treeLayer;
         }
 
-        public TreeList<T> getTreeList() {
-            return this.treeList;
-        }
-
         public IDataProvider getBodyDataProvider() {
             return this.bodyDataProvider;
         }
     }
 
     /**
-     * Simple TreeList.Format implementation that uses the lastname of the
+     * Simple ITreeData implementation that uses the lastname of the
      * PersonWithAddress object as tree item.
      * <p>
      * Using a String directly as the tree item has the possible disadvantage of
      * haven non-unique items in the tree within subtrees.
      */
-    private class PersonWithAddressTreeFormat implements TreeList.Format<PersonWithAddress> {
+    private static class PersonWithAddressTreeData implements ITreeData<PersonWithAddress> {
 
-        private Map<String, PersonWithAddress> parentMapping = new HashMap<>();
+        private List<PersonWithAddress> values;
 
-        /**
-         * Populate path with a list describing the path from a root node to
-         * this element. Upon returning, the list must have size >= 1, where the
-         * provided element identical to the list's last element. This
-         * implementation will use the first object found for a last name as
-         * root node by storing it within a map. If there is already an object
-         * stored for the lastname of the given element, it will be used as root
-         * for the path.
-         */
-        @Override
-        public void getPath(List<PersonWithAddress> path, PersonWithAddress element) {
-            if (this.parentMapping.get(element.getLastName()) != null) {
-                path.add(this.parentMapping.get(element.getLastName()));
-            } else {
-                this.parentMapping.put(element.getLastName(), element);
-            }
-            path.add(element);
-        }
+        private Map<String, List<PersonWithAddress>> parentMapping;
 
-        /**
-         * Simply always return <code>true</code>.
-         *
-         * @return <code>true</code> if this element can have child elements, or
-         *         <code>false</code> if it is always a leaf node.
-         */
-        @Override
-        public boolean allowsChildren(PersonWithAddress element) {
-            return true;
-        }
+        private Map<String, PersonWithAddress> firstElementMapping = new HashMap<>();
 
-        /**
-         * Returns the comparator used to order path elements of the specified
-         * depth. If enforcing order at this level is not intended, this method
-         * should return <code>null</code>. We do a simple sorting of the last
-         * names of the persons to show so the tree nodes are sorted in
-         * alphabetical order.
-         */
-        @Override
-        public Comparator<? super PersonWithAddress> getComparator(int depth) {
-            return new Comparator<PersonWithAddress>() {
+        public PersonWithAddressTreeData(List<PersonWithAddress> values) {
+            this.values = values;
 
-                @Override
-                public int compare(PersonWithAddress o1, PersonWithAddress o2) {
-                    return o1.getLastName().compareTo(o2.getLastName());
+            // first we need to sort by lastname to ensure all elements with the
+            // same lastname are grouped together
+            this.values.sort(Comparator.comparing(PersonWithAddress::getLastName));
+
+            // then we build up the mapping from lastname to all child elements
+            this.parentMapping = values.stream().collect(Collectors.groupingBy(PersonWithAddress::getLastName));
+
+            // identify the parent node element
+            String current = null;
+            for (PersonWithAddress p : this.values) {
+                if (!p.getLastName().equals(current)) {
+                    this.firstElementMapping.put(p.getLastName(), p);
+                    current = p.getLastName();
                 }
+            }
 
-            };
+            // remove the parent node element from the children list
+            this.firstElementMapping.forEach((lastname, parent) -> {
+                this.parentMapping.get(lastname).remove(parent);
+            });
         }
-    }}
+
+        @Override
+        public int getDepthOfData(PersonWithAddress object) {
+            PersonWithAddress firstElement = this.firstElementMapping.get(object.getLastName());
+            return firstElement.equals(object) ? 0 : 1;
+        }
+
+        @Override
+        public int getDepthOfData(int index) {
+            return getDepthOfData(getDataAtIndex(index));
+        }
+
+        @Override
+        public PersonWithAddress getDataAtIndex(int index) {
+            if (!isValidIndex(index)) {
+                return null;
+            }
+            return this.values.get(index);
+        }
+
+        @Override
+        public int indexOf(PersonWithAddress child) {
+            return this.values.indexOf(child);
+        }
+
+        @Override
+        public boolean hasChildren(PersonWithAddress object) {
+            if (object != null && getDepthOfData(object) == 0) {
+                List<PersonWithAddress> children = this.parentMapping.get(object.getLastName());
+                return children != null && !children.isEmpty();
+            }
+            return false;
+        }
+
+        @Override
+        public boolean hasChildren(int index) {
+            return hasChildren(getDataAtIndex(index));
+        }
+
+        @Override
+        public List<PersonWithAddress> getChildren(PersonWithAddress object) {
+            if (object != null && getDepthOfData(object) == 0) {
+                return this.parentMapping.get(object.getLastName());
+            }
+            return new ArrayList<>(0);
+        }
+
+        @Override
+        public List<PersonWithAddress> getChildren(PersonWithAddress object, boolean fullDepth) {
+            // since we only support one level here it is the same as
+            // getChildren(PersonWithAddress)
+            return getChildren(object);
+        }
+
+        @Override
+        public List<PersonWithAddress> getChildren(int index) {
+            return getChildren(getDataAtIndex(index));
+        }
+
+        @Override
+        public int getElementCount() {
+            return this.values.size();
+        }
+
+        @Override
+        public boolean isValidIndex(int index) {
+            return (!(index < 0) && index < this.values.size());
+        }
+
+    }
+
+}
