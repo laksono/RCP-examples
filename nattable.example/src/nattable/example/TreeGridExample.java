@@ -66,6 +66,20 @@ public class TreeGridExample
 		Display display = new Display();
 		Shell shell = new Shell(display);
 		shell.setLayout(new FillLayout());
+		
+		TreeGridExample tge = new TreeGridExample();
+		tge.createExample(shell);
+		
+		shell.open();
+		
+		while (!shell.isDisposed()) {
+			if (!display.readAndDispatch())
+				display.sleep();
+		}
+		 
+		display.dispose();
+
+		System.out.println("Test end");
     }
 
     @PostConstruct
