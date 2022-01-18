@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Data
+Bundle-SymbolicName: org.laksono.data
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: Laksono
+Automatic-Module-Name: org.laksono.data
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: org.eclipse.collections;bundle-version="10.4.0"
