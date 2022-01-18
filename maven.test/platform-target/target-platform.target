@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.8"?>
+<target name="platform-target">
+	<locations>
+		<location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+			<repository location="http://download.eclipse.org/collections/10.4.0/repository"/>
+			<unit id="org.eclipse.collections.feature.feature.group" version="10.4.0.v20200820-2049"/>
+		</location>
+		<location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+			<repository location="https://download.eclipse.org/tools/orbit/downloads/2021-06/"/>
+			<unit id="org.junit" version="4.13.0.v20200204-1500"/>
+		</location>
+	</locations>
+</target>
